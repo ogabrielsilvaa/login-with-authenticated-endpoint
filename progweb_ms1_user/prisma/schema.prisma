@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model user_addresses {
+  id       Int      @id @default(autoincrement())
+  user_id  Int
+  street   String   @db.VarChar(255)
+  city     String   @db.VarChar(100)
+  state    String   @db.VarChar(50)
+  zip_code String   @db.VarChar(20)
+  is_main  Boolean? @default(false)
+  users    users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_addresses_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model users {
+  id             Int              @id @default(autoincrement())
+  email          String           @unique(map: "email") @db.VarChar(255)
+  password_hash  String           @db.VarChar(255)
+  full_name      String           @db.VarChar(255)
+  phone          String?          @db.VarChar(20)
+  role           users_role?      @default(USER)
+  created_at     DateTime         @default(now()) @db.Timestamp(0)
+  updated_at     DateTime         @default(now()) @db.Timestamp(0)
+  user_addresses user_addresses[]
+}
+
+enum users_role {
+  USER
+  ADMIN
+}

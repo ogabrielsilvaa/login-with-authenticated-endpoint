@@ -1,0 +1,13 @@
+name: ecommerce
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: ecommerce-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./init-atual.sql:/docker-entrypoint-initdb.d/init.sql

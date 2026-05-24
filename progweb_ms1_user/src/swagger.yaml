@@ -1,0 +1,315 @@
+openapi: 3.0.0
+info:
+  title: E-commerce Users API
+  description: API de microsserviço para gestão de usuários, endereços e autenticação.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de Desenvolvimento Local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        created_at:
+          type: string
+          format: date-time
+
+    UserAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip_code:
+          type: string
+        is_main:
+          type: boolean
+
+paths:
+  # ==========================================
+  # AUTH
+  # ==========================================
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Realiza o login e retorna o token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: user@exemplo.com
+                password:
+                  type: string
+                  example: senha123
+      responses:
+        '200':
+          description: Login bem-sucedido
+
+  /auth/logout:
+    post:
+      tags: [Autenticação]
+      summary: Invalida a sessão do usuário
+      responses:
+        '200':
+          description: Logout realizado
+
+  # ==========================================
+  # USERS
+  # ==========================================
+  /users:
+    get:
+      tags: [Usuários]
+      summary: Lista todos os usuários
+      security:        # <--- ADICIONE ISSO
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Número da página
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Itens por página
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Usuários]
+      summary: Cria um novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password_hash, full_name]
+              properties:
+                email:
+                  type: string
+                password_hash:
+                  type: string
+                full_name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: Usuário criado
+
+  /users/state/{state}:
+    get:
+      tags: [Usuários]
+      summary: Busca usuários por estado (UF)
+      parameters:
+        - in: path
+          name: state
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de usuários filtrados
+
+  /users/{id}:
+    get:
+      tags: [Usuários]
+      summary: Busca um usuário pelo ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: includeAddresses
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Dados do usuário
+    put:
+      tags: [Usuários]
+      summary: Atualiza dados do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Usuário atualizado
+    delete:
+      tags: [Usuários]
+      summary: Remove um usuário (Requer ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuário deletado com sucesso
+
+  # ==========================================
+  # ADDRESSES
+  # ==========================================
+  /users/{id}/addresses:
+    get:
+      tags: [Endereços]
+      summary: Lista endereços de um usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de endereços
+    post:
+      tags: [Endereços]
+      summary: Adiciona um endereço
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [street, city, state, zip_code]
+              properties:
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zip_code:
+                  type: string
+                is_main:
+                  type: boolean
+      responses:
+        '201':
+          description: Endereço criado
+
+  /users/{id}/addresses/{addressId}:
+    put:
+      tags: [Endereços]
+      summary: Atualiza um endereço
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: addressId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                street:
+                  type: string
+                city:
+                  type: string
+                zip_code:
+                  type: string
+                is_main:
+                  type: boolean
+      responses:
+        '200':
+          description: Endereço atualizado
+    delete:
+      tags: [Endereços]
+      summary: Remove um endereço
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: addressId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Endereço deletado

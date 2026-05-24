@@ -1,0 +1,478 @@
+openapi: 3.0.0
+info:
+  title: Product Service API
+  description: Microsserviço de produtos do e-commerce. Todos os endpoints (exceto /health) exigem autenticação JWT gerada pelo progweb_ms1_user.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002/api/v1
+    description: Servidor de Rede Local
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        category_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Tênis Corrida Pro
+        description:
+          type: string
+          example: Tênis para corrida de alto desempenho
+        price:
+          type: number
+          format: float
+          example: 299.90
+        size:
+          type: string
+          example: "42"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        categories:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    ProductInput:
+      type: object
+      required:
+        - category_id
+        - name
+        - price
+      properties:
+        category_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Tênis Corrida Pro
+        description:
+          type: string
+          example: Tênis para corrida de alto desempenho
+        price:
+          type: number
+          format: float
+          example: 299.90
+        size:
+          type: string
+          example: "42"
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Calçados
+
+    CategoryInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Calçados
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Verifica se o serviço está no ar. Não requer autenticação.
+      security: []
+      tags:
+        - Utilitários
+      responses:
+        "200":
+          description: Serviço ativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  service:
+                    type: string
+                    example: ecommerce-products
+
+  /categories:
+    get:
+      summary: Listar todas as categorias
+      tags:
+        - Categorias
+      responses:
+        "200":
+          description: Lista de categorias
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: Criar categoria
+      tags:
+        - Categorias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Categoria criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /categories/{id}:
+    get:
+      summary: Buscar categoria por ID
+      tags:
+        - Categorias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Categoria encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Categoria não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Atualizar categoria
+      tags:
+        - Categorias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: Categoria atualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Dados inválidos
+
+    delete:
+      summary: Deletar categoria
+      tags:
+        - Categorias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "204":
+          description: Categoria deletada com sucesso
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products:
+    get:
+      summary: Listar todos os produtos
+      tags:
+        - Produtos
+      responses:
+        "200":
+          description: Lista de produtos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      summary: Criar produto
+      tags:
+        - Produtos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Produto criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/search/name:
+    get:
+      summary: Buscar produtos por nome (parcial)
+      tags:
+        - Produtos
+      parameters:
+        - in: query
+          name: name
+          required: true
+          schema:
+            type: string
+          example: tenis
+      responses:
+        "200":
+          description: Produtos encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/category/{id}:
+    get:
+      summary: Buscar produtos por categoria
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Produtos da categoria
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/price/{price}:
+    get:
+      summary: Buscar produtos por preço exato
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: price
+          required: true
+          schema:
+            type: number
+          example: 299.90
+      responses:
+        "200":
+          description: Produtos com esse preço
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/size/{size}:
+    get:
+      summary: Buscar produtos por tamanho
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: size
+          required: true
+          schema:
+            type: string
+          example: "42"
+      responses:
+        "200":
+          description: Produtos com esse tamanho
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      summary: Buscar produto por ID
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Produto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Produto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Atualizar produto completo
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "200":
+          description: Produto atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Dados inválidos
+
+    delete:
+      summary: Deletar produto
+      tags:
+        - Produtos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "204":
+          description: Produto deletado com sucesso
+        "401":
+          description: Token não fornecido ou inválido
+        "403":
+          description: Acesso negado. Apenas administradores podem realizar esta ação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
